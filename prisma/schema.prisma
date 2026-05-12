@@ -1,0 +1,261 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  idea
+  planning
+  building
+  testing
+  completed
+  paused
+}
+
+enum ProjectDifficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum InventoryStatus {
+  planned
+  available
+  reserved
+  used
+  needs_reorder
+  retired
+}
+
+enum LessonType {
+  note
+  mistake
+  reference
+  safety
+  troubleshooting
+}
+
+enum FileUsageContext {
+  project_image
+  step_image
+  part_image
+  schematic
+  pdf
+  datasheet
+  reference
+}
+
+enum StorageProvider {
+  local
+  s3
+  supabase
+  cloudflare_r2
+}
+
+enum ImageVariantKind {
+  originalMetadata
+  fullWebp
+  thumbnailSmall
+  thumbnailMedium
+  thumbnailLarge
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  projects  Project[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Project {
+  id                    String            @id @default(cuid())
+  ownerId               String?
+  owner                 User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  title                 String
+  slug                  String            @unique
+  shortDescription      String
+  projectGoal           String
+  whyBuilt              String
+  problemSolved         String
+  status                ProjectStatus     @default(idea)
+  difficulty            ProjectDifficulty @default(beginner)
+  projectStory          String
+  partsSummary          String
+  lessonsLearned        String
+  mistakesProblems      String
+  fixesSolutions        String
+  safetyNotes           String
+  futureTutorialNotes   String
+  nextSteps             String
+  steps                 ProjectStep[]
+  files                 ProjectFile[]
+  images                ProjectImage[]
+  parts                 ProjectPart[]
+  tags                  ProjectTag[]
+  referenceLinks        ReferenceLink[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([status])
+  @@index([updatedAt])
+}
+
+model ProjectStep {
+  id                           String   @id @default(cuid())
+  projectId                    String
+  project                      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stepNumber                   Int
+  title                        String
+  simpleExplanation            String
+  partsToolsNeeded             String
+  whatIDid                     String
+  whatWentWrong                String
+  howIFixedIt                  String
+  grandkidFriendlyExplanation  String
+  futureTutorialNotes          String
+  safetyNotes                  String
+  files                        ProjectFile[]
+  images                       ProjectImage[]
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  @@unique([projectId, stepNumber])
+  @@index([projectId])
+}
+
+model InventoryItem {
+  id                 String          @id @default(cuid())
+  name               String
+  category           String
+  manufacturer       String?
+  partNumber         String?
+  quantityOnHand     Int             @default(0)
+  storageLocation    String?
+  status             InventoryStatus @default(planned)
+  notes              String          @default("")
+  datasheetUrl       String?
+  imageFiles         ProjectImage[]
+  projectParts       ProjectPart[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([category])
+  @@index([status])
+}
+
+model Lesson {
+  id             String          @id @default(cuid())
+  title          String
+  slug           String          @unique
+  type           LessonType      @default(note)
+  summary        String
+  body           String
+  sourceProjectId String?
+  referenceLinks ReferenceLink[]
+  tags           String[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model ReferenceLink {
+  id          String   @id @default(cuid())
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lessonId    String?
+  lesson      Lesson?  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  label       String
+  url         String
+  sourceName  String?
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ProjectFile {
+  id              String           @id @default(cuid())
+  projectId       String
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stepId          String?
+  step            ProjectStep?     @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  usageContext    FileUsageContext
+  provider        StorageProvider  @default(local)
+  storageKey      String
+  displayName     String
+  originalName    String
+  mimeType        String
+  extension       String
+  byteSize        Int
+  checksum        String?
+  width           Int?
+  height          Int?
+  metadata        Json?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([projectId, usageContext])
+  @@index([storageKey])
+}
+
+model ProjectImage {
+  id              String           @id @default(cuid())
+  projectId       String
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stepId          String?
+  step            ProjectStep?     @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  inventoryItemId String?
+  inventoryItem   InventoryItem?   @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  usageContext    FileUsageContext
+  provider        StorageProvider  @default(local)
+  storageKey      String
+  variant         ImageVariantKind
+  altText         String
+  mimeType        String
+  byteSize        Int
+  width           Int?
+  height          Int?
+  sourceFileName  String?
+  createdAt       DateTime         @default(now())
+
+  @@index([projectId, usageContext])
+  @@index([storageKey])
+  @@index([variant])
+}
+
+model ProjectPart {
+  id              String         @id @default(cuid())
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  inventoryItemId String?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  name            String
+  quantity        Int            @default(1)
+  role            String
+  notes           String         @default("")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([projectId])
+}
+
+model Tag {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  slug      String       @unique
+  projects  ProjectTag[]
+  createdAt DateTime     @default(now())
+}
+
+model ProjectTag {
+  projectId String
+  tagId     String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, tagId])
+}
