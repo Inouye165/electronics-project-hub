@@ -43,10 +43,11 @@ const project = {
 };
 
 describe("ProjectDetailView", () => {
-  it("renders the project story, steps, and tutorial notes", () => {
+  it("renders the project title, build steps, and tutorial notes", () => {
     render(<ProjectDetailView project={project} />);
 
     expect(screen.getByRole("heading", { name: "Bench LED Continuity Tester" })).toBeInTheDocument();
+    // Build Log tab panel is in the DOM (CSS hide is not applied in jsdom)
     expect(screen.getByRole("heading", { name: "Build steps" })).toBeInTheDocument();
     expect(screen.getByText("A complete loop lets the light turn on.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Future tutorial notes" })).toBeInTheDocument();
@@ -58,5 +59,30 @@ describe("ProjectDetailView", () => {
     const editLink = screen.getByRole("link", { name: "Edit project" });
     expect(editLink).toBeInTheDocument();
     expect(editLink).toHaveAttribute("href", "/projects/bench-led-continuity-tester/edit");
+  });
+
+  it("renders tab navigation with all five section buttons", () => {
+    render(<ProjectDetailView project={project} />);
+
+    expect(screen.getByRole("button", { name: "Overview" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Parts" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Build Log" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Images & Files" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Lessons Learned" })).toBeInTheDocument();
+  });
+
+  it("shows a next action prompt when parts have not been added", () => {
+    const noPartsProject = { ...project, parts: [], partsSummary: "—" };
+    render(<ProjectDetailView project={noPartsProject} />);
+
+    expect(screen.getByText("Add your parts list")).toBeInTheDocument();
+    expect(screen.getByText("Next action")).toBeInTheDocument();
+  });
+
+  it("does not show a next action prompt for completed projects", () => {
+    const completedProject = { ...project, status: "completed" as const };
+    render(<ProjectDetailView project={completedProject} />);
+
+    expect(screen.queryByText("Next action")).not.toBeInTheDocument();
   });
 });
