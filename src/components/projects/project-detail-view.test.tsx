@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ProjectDetailView } from "@/components/projects/project-detail-view";
 
 const project = {
+  slug: "bench-led-continuity-tester",
   title: "Bench LED Continuity Tester",
   shortDescription: "A compact tester for checking wiring while working at the bench.",
   status: "building" as const,
@@ -49,5 +50,13 @@ describe("ProjectDetailView", () => {
     expect(screen.getByRole("heading", { name: "Build steps" })).toBeInTheDocument();
     expect(screen.getByText("A complete loop lets the light turn on.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Future tutorial notes" })).toBeInTheDocument();
+  });
+
+  it("shows an Edit project link pointing to the correct edit URL", () => {
+    render(<ProjectDetailView project={project} />);
+
+    const editLink = screen.getByRole("link", { name: "Edit project" });
+    expect(editLink).toBeInTheDocument();
+    expect(editLink).toHaveAttribute("href", "/projects/bench-led-continuity-tester/edit");
   });
 });

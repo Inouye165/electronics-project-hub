@@ -1,7 +1,9 @@
 import type { Project, ProjectStep } from "@prisma/client";
+import { ZodError } from "zod";
 import { describe, expect, it, vi } from "vitest";
 
-import { createProject, normalizeStepOrdering, prepareProjectInput, type ProjectRepositoryPort } from "@/lib/services/project-service";
+import { createProject, normalizeStepOrdering, prepareProjectInput, prepareProjectUpdate, type ProjectRepositoryPort } from "@/lib/services/project-service";
+import { projectUpdateSchema } from "@/lib/validation/project-schemas";
 import type { ProjectInput } from "@/lib/validation/project-schemas";
 
 const projectInput: ProjectInput = {
@@ -49,5 +51,25 @@ describe("project service", () => {
       { stepNumber: 2 },
       { stepNumber: 3 },
     ]);
+  });
+
+  it("sanitizes project update input and strips script tags from rich text fields", () => {
+    const update = prepareProjectUpdate({
+      id: "project-1",
+      title: "  Motion Detection Beeper  ",
+      slug: "motion-detection-beeper",
+      projectStory: "<script>alert('xss')</script>Used a PIR sensor on GPIO 13.",
+    });
+
+    expect(update.title).toBe("Motion Detection Beeper");
+    expect(update.slug).toBe("motion-detection-beeper");
+    expect(update.projectStory).not.toContain("script");
+    expect(update.projectStory).toContain("Used a PIR sensor on GPIO 13.");
+  });
+
+  it("rejects an invalid slug format in the update schema", () => {
+    expect(() =>
+      projectUpdateSchema.parse({ id: "project-1", slug: "Has Spaces & Symbols!" }),
+    ).toThrow(ZodError);
   });
 });

@@ -4,6 +4,7 @@ import { difficultyLabels, formatShortDate, statusLabels } from "@/lib/format";
 
 export interface ProjectDetailViewProps {
   project: {
+    slug: string;
     title: string;
     shortDescription: string;
     status: ProjectStatus;
@@ -51,6 +52,11 @@ export function ProjectDetailView({ project }: ProjectDetailViewProps) {
           <span className={`pill status-${project.status}`}>{statusLabels[project.status]}</span>
           <span className="pill">{difficultyLabels[project.difficulty]}</span>
           <span className="pill">Updated {formatShortDate(project.updatedAt)}</span>
+        </div>
+        <div className="button-row">
+          <a href={`/projects/${project.slug}/edit`} className="button primary">
+            Edit project
+          </a>
         </div>
       </header>
 
