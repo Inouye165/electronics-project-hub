@@ -15,6 +15,9 @@ export default async function ProjectsPage() {
           <span className="eyebrow">Projects</span>
           <h1>Every build gets a complete record.</h1>
           <p className="lead">Track the goal, story, parts, steps, fixes, safety notes, and future tutorial notes for each electronics project.</p>
+          <div className="button-row">
+            <Link className="button primary" href="/projects/new">New project</Link>
+          </div>
         </header>
         {projects.length ? (
           <div className="project-grid">
