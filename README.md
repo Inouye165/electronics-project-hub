@@ -28,6 +28,31 @@ Open `http://localhost:3000` after the dev server starts.
 
 If you already have PostgreSQL running, update `DATABASE_URL` in `.env` instead of using Docker Compose.
 
+## Start All Local Servers
+
+For normal local development, start the PostgreSQL server first, then run the Next.js app server:
+
+```powershell
+docker compose up -d postgres
+npm run dev
+```
+
+The app runs at `http://localhost:3000`. PostgreSQL listens on `localhost:5432` using the credentials in `.env.example` unless you change `DATABASE_URL`.
+
+On a fresh checkout, run the database setup once before starting the app:
+
+```powershell
+Copy-Item .env.example .env
+npm install
+docker compose up -d postgres
+npm run prisma:generate
+npm run prisma:migrate
+npm run seed
+npm run dev
+```
+
+If `docker compose up -d postgres` fails on Windows, start Docker Desktop and rerun the command. If you prefer a separately installed PostgreSQL server, keep Docker stopped and point `DATABASE_URL` in `.env` at that database instead.
+
 ## Environment Variables
 
 Use `.env.example` as the source of truth for required local configuration.
